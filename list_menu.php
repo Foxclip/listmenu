@@ -32,10 +32,12 @@ const DB_NAME = "ListMenuDb";
 function write_val($val): void {
     write_text(is_null($val) ? "NULL" : $val);
 }
+
 function count_parents(string $path): int {
     $arr = explode("/", $path);
     return count($arr) - 1;
 }
+
 function get_indent(int $depth): string {
     $result = "";
     for ($i = 0; $i < $depth; $i++) {
@@ -44,48 +46,63 @@ function get_indent(int $depth): string {
     return $result;
 }
 
-$sql = <<<SQL
-WITH RECURSIVE
-    temp(id, name, url, path, depth) AS (
-        SELECT
-            id,
-            name,
-            CAST(CONCAT('/', alias) AS CHAR(200)),
-            CAST(LPAD(id, 3, '0') AS CHAR(200)),
-            0
-        FROM ListItems
-        WHERE parent_id IS NULL
-        UNION ALL
-        SELECT
-            ListItems.id,
-            ListItems.name,
-            CONCAT('/', TRIM(BOTH '/' FROM temp.url), '/', ListItems.alias),
-            CONCAT(temp.path, '/', LPAD(ListItems.id, 3, '0')),
-            depth + 1
-        FROM temp JOIN ListItems ON temp.id = ListItems.parent_id
-    )
-SELECT * FROM temp
-WHERE depth < :hierarchy_depth
-ORDER BY path;
-SQL;
-$pdo = mysql\db_connect();
-$pdo->exec("USE ".DB_NAME.";");
-$statement = $pdo->prepare($sql);
-$statement->bindValue(":hierarchy_depth", 2);
-$statement->execute();
-$result = $statement->fetchAll(PDO::FETCH_ASSOC);
+function query_items(int $max_depth): array {
+    $sql = <<<SQL
+    WITH RECURSIVE
+        temp(id, name, url, path, depth) AS (
+            SELECT
+                id,
+                name,
+                CAST(CONCAT('/', alias) AS CHAR(200)),
+                CAST(LPAD(id, 3, '0') AS CHAR(200)),
+                0
+            FROM ListItems
+            WHERE parent_id IS NULL
+            UNION ALL
+            SELECT
+                ListItems.id,
+                ListItems.name,
+                CONCAT('/', TRIM(BOTH '/' FROM temp.url), '/', ListItems.alias),
+                CONCAT(temp.path, '/', LPAD(ListItems.id, 3, '0')),
+                depth + 1
+            FROM temp JOIN ListItems ON temp.id = ListItems.parent_id
+        )
+    SELECT * FROM temp
+    WHERE depth < :hierarchy_depth
+    ORDER BY path;
+    SQL;
+    $pdo = mysql\db_connect();
+    $pdo->exec("USE ".DB_NAME.";");
+    $statement = $pdo->prepare($sql);
+    $statement->bindValue(":hierarchy_depth", $max_depth);
+    $statement->execute();
+    $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+    return $result;
+}
+
+$items_all = query_items(1000);
 
 write_html("<pre>");
-foreach ($result as $row) {
+foreach ($items_all as $row) {
     $parents = count_parents($row["path"]);
     $indent = get_indent($parents);
     write_text($indent);
     write_val($row["name"]);
-    write_text(" ");
-    write_val($row["url"]);
     write_line();
 }
 write_html("</pre>");
+
+$type_a_str = "";
+foreach ($items_all as $row) {
+    $parents = count_parents($row["path"]);
+    $indent = get_indent($parents);
+    $type_a_str .= $indent;
+    $type_a_str .= $row["name"];
+    $type_a_str .= " ";
+    $type_a_str .= $row["url"];
+    $type_a_str .= "\n";
+}
+file_put_contents("type_a.txt", $type_a_str);
 
 ?>
 
