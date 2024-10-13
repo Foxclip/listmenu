@@ -20,19 +20,21 @@
 
 <?php
 
+require_once "writer.php";
+require_once "mysql.php";
 use function writer\write_html;
+use function writer\write_text;
 use function writer\write_line;
 use function writer\write_tag_text;
 
-require_once "writer.php";
-require_once "mysql.php";
-
 const DB_NAME = "ListMenuDb";
 const TABLE_NAME = "ListItems";
+const OUTPUT_SQL_FILE = "create_listmenu.sql";
 
 $pdo = \mysql\db_connect();
 $json = file_get_contents("categories.json");
 $list_items = json_decode($json);
+$sql = "";
 write_html("<pre>");
 $sql_db_create = "DROP DATABASE IF EXISTS ".DB_NAME.";
 CREATE DATABASE ".DB_NAME.";
@@ -47,14 +49,17 @@ CREATE TABLE ListItems(
     FOREIGN KEY (parent_id) REFERENCES ".TABLE_NAME."(id)
 );
 ";
+$sql .= $sql_db_create."\n";
+$sql .= $sql_table_create."\n";
 write_line($sql_db_create);
 write_line($sql_table_create);
-$add_insert = function($obj, $parent) use(&$pdo, &$add_insert): void {
+$add_insert = function($obj, $parent) use(&$pdo, &$sql, &$add_insert): void {
     $id = $obj->id;
     $quoted_name = $pdo->quote($obj->name);
     $quoted_alias = $pdo->quote($obj->alias);
     $parent_id = $parent ? $parent->id : "NULL";
     $sql_insert = "INSERT INTO ListItems VALUES ($id, $quoted_name, $quoted_alias, $parent_id);";
+    $sql .= $sql_insert."\n";
     write_line($sql_insert);
     if (isset($obj->childrens)) {
         foreach ($obj->childrens as $child)  {
@@ -66,6 +71,8 @@ foreach ($list_items as $root_item) {
     $add_insert($root_item, null);
 }
 write_html("</pre>");
+
+file_put_contents(OUTPUT_SQL_FILE, $sql);
 
 ?>
 
