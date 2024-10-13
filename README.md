@@ -9,8 +9,8 @@
 
 ## Использование
 
-При при обращении к `list_menu.php` показывается список меню и создаются файлы `type_a.txt` и `type_b.txt`
+При обращении к `list_menu.php` показывается список меню и создаются файлы `type_a.txt` и `type_b.txt`
 
 ## Прочее
 
-Файл `create_listmenu.sql` создан с помощью скрипта `generate.sql.php`, который берет данные из `categories.json`
+Файл `create_listmenu.sql` создан с помощью скрипта `generate_sql.php`, который берет данные из `categories.json`
