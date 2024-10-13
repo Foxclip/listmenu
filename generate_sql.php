@@ -43,8 +43,8 @@ USE ".DB_NAME.";
 $sql_table_create = "DROP TABLE IF EXISTS ".TABLE_NAME.";
 CREATE TABLE ListItems(
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(20),
-    alias VARCHAR(20),
+    name VARCHAR(20) NOT NULL,
+    alias VARCHAR(20) NOT NULL,
     parent_id INT,
     FOREIGN KEY (parent_id) REFERENCES ".TABLE_NAME."(id)
 );
