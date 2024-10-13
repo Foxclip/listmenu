@@ -28,7 +28,6 @@ use function writer\write_line;
 use function writer\write_tag_text;
 
 const DB_NAME = "ListMenuDb";
-const INPUT_SQL_FILE = "get_listmenu.sql";
 
 function write_val($val): void {
     write_text(is_null($val) ? "NULL" : $val);
@@ -45,10 +44,36 @@ function get_indent(int $depth): string {
     return $result;
 }
 
-$sql = file_get_contents(INPUT_SQL_FILE);
+$sql = <<<SQL
+WITH RECURSIVE
+    temp(id, name, url, path, depth) AS (
+        SELECT
+            id,
+            name,
+            CAST(CONCAT('/', alias) AS CHAR(200)),
+            CAST(LPAD(id, 3, '0') AS CHAR(200)),
+            0
+        FROM ListItems
+        WHERE parent_id IS NULL
+        UNION ALL
+        SELECT
+            ListItems.id,
+            ListItems.name,
+            CONCAT('/', TRIM(BOTH '/' FROM temp.url), '/', ListItems.alias),
+            CONCAT(temp.path, '/', LPAD(ListItems.id, 3, '0')),
+            depth + 1
+        FROM temp JOIN ListItems ON temp.id = ListItems.parent_id
+    )
+SELECT * FROM temp
+WHERE depth < :hierarchy_depth
+ORDER BY path;
+SQL;
 $pdo = mysql\db_connect();
 $pdo->exec("USE ".DB_NAME.";");
-$result = $pdo->query($sql, PDO::FETCH_ASSOC);
+$statement = $pdo->prepare($sql);
+$statement->bindValue(":hierarchy_depth", 2);
+$statement->execute();
+$result = $statement->fetchAll(PDO::FETCH_ASSOC);
 
 write_html("<pre>");
 foreach ($result as $row) {

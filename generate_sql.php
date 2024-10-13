@@ -77,32 +77,6 @@ foreach ($list_items as $root_item) {
 file_put_contents(OUTPUT_SQL_FILE, $sql_output);
 write_html("</pre>");
 
-write_line("Получение элементов меню:");
-
-write_html("<pre>");
-$sql_input = "WITH RECURSIVE
-    temp(id, name, url, path) AS (
-        SELECT
-            id,
-            name,
-            CAST(CONCAT('/', alias) AS CHAR(200)),
-            CAST(LPAD(id, 3, '0') AS CHAR(200))
-        FROM ".TABLE_NAME."
-        WHERE parent_id IS NULL
-        UNION ALL
-        SELECT
-            ".TABLE_NAME.".id,
-            ".TABLE_NAME.".name,
-            CONCAT('/', TRIM(BOTH '/' FROM temp.url), '/', ".TABLE_NAME.".alias),
-            CONCAT(temp.path, '/', LPAD(".TABLE_NAME.".id, 3, '0'))
-        FROM temp JOIN ".TABLE_NAME." ON temp.id = ".TABLE_NAME.".parent_id
-    )
-SELECT * FROM temp ORDER BY path;
-";
-write_line($sql_input);
-file_put_contents(INPUT_SQL_FILE, $sql_input);
-write_html("</pre>");
-
 ?>
 
 </body>
