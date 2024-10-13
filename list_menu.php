@@ -104,6 +104,18 @@ foreach ($items_all as $row) {
 }
 file_put_contents("type_a.txt", $type_a_str);
 
+$items_first_level = query_items(2);
+
+$type_b_str = "";
+foreach ($items_first_level as $row) {
+    $parents = count_parents($row["path"]);
+    $indent = get_indent($parents);
+    $type_b_str .= $indent;
+    $type_b_str .= $row["name"];
+    $type_b_str .= "\n";
+}
+file_put_contents("type_b.txt", $type_b_str);
+
 ?>
 
 </body>
