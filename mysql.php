@@ -24,11 +24,7 @@ function db_connect() : \PDO {
     $host = $mysql_ini["host"];
     $user = $mysql_ini["user"];
     $password = $mysql_ini["password"];
-    $dbstr = "";
-    if (isset($mysql_ini["database"])) {
-        $dbstr = ";dbname=".$mysql_ini["database"];
-    }
-    $conn = new \PDO("mysql:host=$host$dbstr", $user, $password);
+    $conn = new \PDO("mysql:host=$host", $user, $password);
     return $conn;
 }
 ?>

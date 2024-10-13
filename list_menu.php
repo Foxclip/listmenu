@@ -27,7 +27,10 @@ use function writer\write_text;
 use function writer\write_line;
 use function writer\write_tag_text;
 
-const DB_NAME = "ListMenuDb";
+$mysql_ini = parse_ini_file("mysql.ini");
+$db_name = $mysql_ini["database_name"];
+$table_name = $mysql_ini["table_name"];
+$pdo = mysql\db_connect();
 
 // получения отступа из строки пути, которя пришла из базы
 function get_indent(string $path): string {
@@ -43,6 +46,10 @@ function get_indent(string $path): string {
 // получение списка меню
 // можно указать максимальную глубину вложенности
 function query_items(int $max_depth): array {
+    global $db_name;
+    global $table_name;
+    global $pdo;
+
     $sql = <<<SQL
     WITH RECURSIVE
         temp(id, name, url, path, depth) AS (
@@ -52,23 +59,23 @@ function query_items(int $max_depth): array {
                 CAST(CONCAT('/', alias) AS CHAR(200)),
                 CAST(LPAD(id, 3, '0') AS CHAR(200)),
                 0
-            FROM ListItems
+            FROM $table_name
             WHERE parent_id IS NULL
             UNION ALL
             SELECT
-                ListItems.id,
-                ListItems.name,
-                CONCAT('/', TRIM(BOTH '/' FROM temp.url), '/', ListItems.alias),
-                CONCAT(temp.path, '/', LPAD(ListItems.id, 3, '0')),
+                $table_name.id,
+                $table_name.name,
+                CONCAT('/', TRIM(BOTH '/' FROM temp.url), '/', $table_name.alias),
+                CONCAT(temp.path, '/', LPAD($table_name.id, 3, '0')),
                 depth + 1
-            FROM temp JOIN ListItems ON temp.id = ListItems.parent_id
+            FROM temp JOIN $table_name ON temp.id = $table_name.parent_id
         )
     SELECT * FROM temp
     WHERE depth < :hierarchy_depth
     ORDER BY path;
     SQL;
-    $pdo = mysql\db_connect();
-    $pdo->exec("USE ".DB_NAME.";");
+    
+    $pdo->exec("USE $db_name;");
     $statement = $pdo->prepare($sql);
     $statement->bindValue(":hierarchy_depth", $max_depth);
     $statement->execute();
