@@ -2,11 +2,11 @@
 
 namespace writer;
 
-function write_text(mixed $text): void {
+function write_text(mixed $text = ""): void {
     echo htmlspecialchars($text);
 }
 
-function write_line(mixed $text): void {
+function write_line(mixed $text = ""): void {
     echo write_text($text)."<br>";
 }
 

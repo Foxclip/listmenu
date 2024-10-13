@@ -80,9 +80,7 @@ write_html("</pre>");
 write_line("Получение элементов меню:");
 
 write_html("<pre>");
-$sql_input = "USE ".DB_NAME.";
-
-WITH RECURSIVE
+$sql_input = "WITH RECURSIVE
     temp(id, name, url, path) AS (
         SELECT
             id,
