@@ -29,18 +29,11 @@ use function writer\write_tag_text;
 
 const DB_NAME = "ListMenuDb";
 
-function write_val($val): void {
-    write_text(is_null($val) ? "NULL" : $val);
-}
-
-function count_parents(string $path): int {
+function get_indent(string $path): string {
     $arr = explode("/", $path);
-    return count($arr) - 1;
-}
-
-function get_indent(int $depth): string {
+    $parent_count = count($arr) - 1;
     $result = "";
-    for ($i = 0; $i < $depth; $i++) {
+    for ($i = 0; $i < $parent_count; $i++) {
         $result .= "    ";
     }
     return $result;
@@ -84,18 +77,16 @@ $items_all = query_items(1000);
 
 write_html("<pre>");
 foreach ($items_all as $row) {
-    $parents = count_parents($row["path"]);
-    $indent = get_indent($parents);
+    $indent = get_indent($row["path"]);
     write_text($indent);
-    write_val($row["name"]);
+    write_text($row["name"]);
     write_line();
 }
 write_html("</pre>");
 
 $type_a_str = "";
 foreach ($items_all as $row) {
-    $parents = count_parents($row["path"]);
-    $indent = get_indent($parents);
+    $indent = get_indent($row["path"]);
     $type_a_str .= $indent;
     $type_a_str .= $row["name"];
     $type_a_str .= " ";
@@ -108,8 +99,7 @@ $items_first_level = query_items(2);
 
 $type_b_str = "";
 foreach ($items_first_level as $row) {
-    $parents = count_parents($row["path"]);
-    $indent = get_indent($parents);
+    $indent = get_indent($row["path"]);
     $type_b_str .= $indent;
     $type_b_str .= $row["name"];
     $type_b_str .= "\n";
