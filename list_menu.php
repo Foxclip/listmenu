@@ -29,6 +29,7 @@ use function writer\write_tag_text;
 
 const DB_NAME = "ListMenuDb";
 
+// получения отступа из строки пути, которя пришла из базы
 function get_indent(string $path): string {
     $arr = explode("/", $path);
     $parent_count = count($arr) - 1;
@@ -39,6 +40,8 @@ function get_indent(string $path): string {
     return $result;
 }
 
+// получение списка меню
+// можно указать максимальную глубину вложенности
 function query_items(int $max_depth): array {
     $sql = <<<SQL
     WITH RECURSIVE
@@ -73,8 +76,10 @@ function query_items(int $max_depth): array {
     return $result;
 }
 
-$items_all = query_items(1000);
+// получаем весь список из базы
+$items_all = query_items(max_depth: 1000);
 
+// выводим названия пунктов меню на страницу
 write_html("<pre>");
 foreach ($items_all as $row) {
     $indent = get_indent($row["path"]);
@@ -84,6 +89,7 @@ foreach ($items_all as $row) {
 }
 write_html("</pre>");
 
+// выводим названия пунктов меню и url в type_a.txt
 $type_a_str = "";
 foreach ($items_all as $row) {
     $indent = get_indent($row["path"]);
@@ -95,8 +101,10 @@ foreach ($items_all as $row) {
 }
 file_put_contents("type_a.txt", $type_a_str);
 
-$items_first_level = query_items(2);
+// получаем первые два уровня списка из базы
+$items_first_level = query_items(max_depth: 2);
 
+// выводим названия пунктов меню (первые два уровня) в type_b.txt
 $type_b_str = "";
 foreach ($items_first_level as $row) {
     $indent = get_indent($row["path"]);

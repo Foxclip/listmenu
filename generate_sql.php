@@ -40,10 +40,14 @@ $sql_output = "";
 write_line("Создание базы, таблицы и их заполнение:");
 
 write_html("<pre>");
+
+// CREATE DATABASE
 $sql_db_create = "DROP DATABASE IF EXISTS ".DB_NAME.";
 CREATE DATABASE ".DB_NAME.";
 USE ".DB_NAME.";
 ";
+
+// CREATE TABLE
 $sql_table_create = "DROP TABLE IF EXISTS ".TABLE_NAME.";
 CREATE TABLE ListItems(
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -57,12 +61,14 @@ $sql_output .= $sql_db_create."\n";
 $sql_output .= $sql_table_create."\n";
 write_line($sql_db_create);
 write_line($sql_table_create);
+
+// INSERT
 $add_insert = function($obj, $parent) use(&$pdo, &$sql_output, &$add_insert): void {
     $id = $obj->id;
     $quoted_name = $pdo->quote($obj->name);
     $quoted_alias = $pdo->quote($obj->alias);
     $parent_id = $parent ? $parent->id : "NULL";
-    $sql_insert = "INSERT INTO ListItems VALUES ($id, $quoted_name, $quoted_alias, $parent_id);";
+    $sql_insert = "INSERT INTO ".TABLE_NAME." VALUES ($id, $quoted_name, $quoted_alias, $parent_id);";
     $sql_output .= $sql_insert."\n";
     write_line($sql_insert);
     if (isset($obj->childrens)) {
@@ -75,6 +81,7 @@ foreach ($list_items as $root_item) {
     $add_insert($root_item, null);
 }
 file_put_contents(OUTPUT_SQL_FILE, $sql_output);
+
 write_html("</pre>");
 
 ?>
