@@ -30,11 +30,15 @@ use function writer\write_tag_text;
 const DB_NAME = "ListMenuDb";
 const TABLE_NAME = "ListItems";
 const OUTPUT_SQL_FILE = "create_listmenu.sql";
+const INPUT_SQL_FILE = "get_listmenu.sql";
 
 $pdo = \mysql\db_connect();
 $json = file_get_contents("categories.json");
 $list_items = json_decode($json);
-$sql = "";
+$sql_output = "";
+
+write_line("Создание базы, таблицы и их заполнение:");
+
 write_html("<pre>");
 $sql_db_create = "DROP DATABASE IF EXISTS ".DB_NAME.";
 CREATE DATABASE ".DB_NAME.";
@@ -49,17 +53,17 @@ CREATE TABLE ListItems(
     FOREIGN KEY (parent_id) REFERENCES ".TABLE_NAME."(id)
 );
 ";
-$sql .= $sql_db_create."\n";
-$sql .= $sql_table_create."\n";
+$sql_output .= $sql_db_create."\n";
+$sql_output .= $sql_table_create."\n";
 write_line($sql_db_create);
 write_line($sql_table_create);
-$add_insert = function($obj, $parent) use(&$pdo, &$sql, &$add_insert): void {
+$add_insert = function($obj, $parent) use(&$pdo, &$sql_output, &$add_insert): void {
     $id = $obj->id;
     $quoted_name = $pdo->quote($obj->name);
     $quoted_alias = $pdo->quote($obj->alias);
     $parent_id = $parent ? $parent->id : "NULL";
     $sql_insert = "INSERT INTO ListItems VALUES ($id, $quoted_name, $quoted_alias, $parent_id);";
-    $sql .= $sql_insert."\n";
+    $sql_output .= $sql_insert."\n";
     write_line($sql_insert);
     if (isset($obj->childrens)) {
         foreach ($obj->childrens as $child)  {
@@ -70,9 +74,36 @@ $add_insert = function($obj, $parent) use(&$pdo, &$sql, &$add_insert): void {
 foreach ($list_items as $root_item) {
     $add_insert($root_item, null);
 }
+file_put_contents(OUTPUT_SQL_FILE, $sql_output);
 write_html("</pre>");
 
-file_put_contents(OUTPUT_SQL_FILE, $sql);
+write_line("Получение элементов меню:");
+
+write_html("<pre>");
+$sql_input = "USE ".DB_NAME.";
+
+WITH RECURSIVE
+    temp(id, name, url, path) AS (
+        SELECT
+            id,
+            name,
+            CAST(CONCAT('/', alias) AS CHAR(200)),
+            CAST(LPAD(id, 3, '0') AS CHAR(200))
+        FROM ".TABLE_NAME."
+        WHERE parent_id IS NULL
+        UNION ALL
+        SELECT
+            ".TABLE_NAME.".id,
+            ".TABLE_NAME.".name,
+            CONCAT('/', TRIM(BOTH '/' FROM temp.url), '/', ".TABLE_NAME.".alias),
+            CONCAT(temp.path, '/', LPAD(".TABLE_NAME.".id, 3, '0'))
+        FROM temp JOIN ".TABLE_NAME." ON temp.id = ".TABLE_NAME.".parent_id
+    )
+SELECT * FROM temp ORDER BY path;
+";
+write_line($sql_input);
+file_put_contents(INPUT_SQL_FILE, $sql_input);
+write_html("</pre>");
 
 ?>
 
